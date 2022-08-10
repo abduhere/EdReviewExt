@@ -5,8 +5,12 @@
     "version": "0.1",
     "permissions": [
         "storage",
-        "tabs"
+        "tabs",
+        "webNavigation"
     ],
+    "externally_connectable": {
+        "ids": ["*"]
+    },
     "host_permissions": [
         "https://*.educative.io/*"
     ],
