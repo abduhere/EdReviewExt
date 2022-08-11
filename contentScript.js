@@ -2,7 +2,7 @@ const removeAllChildren = (parent) => {
     while (parent.lastChild) {
         parent.removeChild(parent.lastChild);
     }
-};
+}
 
 function setUpCategoryChoices(){
 	var strRadioGrp = `Select Lesson Category: &nbsp; &nbsp; &nbsp;<input type="radio" name="category" value="A" checked="checked"> A
@@ -74,6 +74,12 @@ function checkChallengeA() {
     rpt.appendChild(textIssues);
     const quizTitleIssues = quizTitleViolations();
     rpt.appendChild(quizTitleIssues);
+    const constraintsIssues = constraintsViolations();
+    rpt.appendChild(constraintsIssues);
+    const permutationIssues = permutationViolations();
+    rpt.appendChild(permutationIssues);
+    const codeIssues = codeViolations();
+    rpt.appendChild(codeIssues);
     if (titleIssues.childElementCount + summaryIssues.childElementCount + tocIssues.childElementCount == 0){
     	allGood = document.createElement("span");
     	allGood.textContent = "All good!"
@@ -122,12 +128,25 @@ function lessonTitleViolations() {
 function lessonSummaryViolation() {
     const summaryElement = document.getElementsByClassName("PageSummary__Description-der42c-2 fOqKyO");
     const list = document.createElement("ul");
+    let title = document.getElementsByClassName("text-left mb-2")[0].innerHTML;
+    title = title.substring(11);
+    const summary = "Try to solve the " + title + " problem.";
     if (summaryElement[0].innerText.length == 0) {
         const li = document.createElement("li");
         li.innerHTML = "Lesson summary is missing!";
         li.style.color = "red";
         list.appendChild(li);
-    } else if (summaryElement[0].innerText[summaryElement[0].innerText.length - 1] != '.') {
+    } else if (summaryElement[0].innerText.toLowerCase() != summary.toLowerCase()) {
+        const li = document.createElement("li");
+        li.innerHTML = "Lesson summary not as per category D summary template.";
+        li.style.color = "red";
+        list.appendChild(li);
+    } else if (summaryElement[0].innerText.substring(17, 17 + title.length) != title) {
+        const li = document.createElement("li");
+        li.innerHTML = "Problem Title should be in Title Case in lesson summary.";
+        li.style.color = "red";
+        list.appendChild(li);
+    }else if (summaryElement[0].innerText[summaryElement[0].innerText.length - 1] != '.') {
         const li = document.createElement("li");
         li.innerHTML = "The summary should end with the period symbol.";
         li.style.color = "red";
@@ -187,7 +206,7 @@ function compolsoryTextViolations() {
             list.appendChild(li);
         }
     } else {
-        if (headingTest.nextElementSibling.innerText != "Let’s take a moment to make sure we have correctly understood the problem. The quiz below helps us to check that we are solving precisely the right problem:") {
+        if (headingTest.nextElementSibling.innerText != "Let's take a moment to make sure we have correctly understood the problem. The quiz below helps us to check that we are solving precisely the right problem:") {
             const li = document.createElement("li");
             li.innerHTML = "\"Test your understanding of the problem\" Section text missing/not as per template."
             li.style.color = "red";
@@ -212,6 +231,55 @@ function compolsoryTextViolations() {
             list.appendChild(li);
         }
     }
+
+    // Checking Try it yourself text violations
+    const sentences = ["We have provided a useful code template in the other file, that you may build on to solve this problem.", "We have provided some useful code templates in the other files, that you may build on to solve this problem.", "We have provided some useful code templates in the other file, that you may build on to solve this problem."]
+    const headingTry = document.getElementById("Try-it-yourself");
+    const files = document.getElementsByClassName("styles__Files-sc-2pjuhh-9 ksBJCN");
+    if (headingTry.nextElementSibling == null) {
+        let text = headingTry.closest(".mt-5").nextElementSibling.innerText;
+        if (files.length == 0) {
+            if (text != "Implement your solution in main.py in the following coding playground.") {
+                const li = document.createElement("li");
+                li.innerHTML = "\"Try it yourself\" Section text missing/not as per template."
+                li.style.color = "red";
+                list.appendChild(li);
+            }
+        } else {
+            if (!sentences.includes(text[1])) {
+                const li = document.createElement("li");
+                li.innerHTML = "In \"Try it yourself\", guide the learner about the additional files."
+                li.style.color = "red";
+                list.appendChild(li);
+            }
+        }
+    } else {
+        let text = headingTry.nextElementSibling.innerText;
+        if (files.length == 0) {
+            if (text != "Implement your solution in main.py in the following coding playground.") {
+                const li = document.createElement("li");
+                li.innerHTML = "\"Try it yourself\" Section text missing/not as per template."
+                li.style.color = "red";
+                list.appendChild(li);
+            }
+        } else {
+            text = text.split(". ");
+            if (text[0] != "Implement your solution in main.py in the following coding playground") {
+                const li = document.createElement("li");
+                li.innerHTML = "\"Try it yourself\" Section text missing/not as per template."
+                li.style.color = "red";
+                list.appendChild(li);
+            }
+            if (!sentences.includes(text[1])) {
+                const li = document.createElement("li");
+                li.innerHTML = "In \"Try it yourself\", guide the learner about the additional files."
+                li.style.color = "red";
+                list.appendChild(li);
+            }
+        }
+    }
+
+    // Checking Try it yourself text violations in case of more than one files in coding playground
     return list;
 }
 
@@ -238,6 +306,68 @@ function quizTitleViolations() {
             }
             list.appendChild(li);
         }
+    }
+    return list;
+}
+
+// Returns a list of violations in Constraints
+function constraintsViolations() {
+    const list = document.createElement("ul");
+    const statementHeading = document.getElementById("Statement");
+    const constraintHeading = statementHeading.nextElementSibling.nextElementSibling;
+    if (constraintHeading.innerText != "Constraints" && constraintHeading.innerText != "Constraints#") {
+        const li = document.createElement("li");
+        li.innerHTML = "Constraints are missing.";
+        li.style.color = "red";
+        list.appendChild(li);
+    } else {
+        if (constraintHeading.firstElementChild == null || constraintHeading.tagName == "H2" || constraintHeading.tagName == "H3" || constraintHeading.tagName == "H4" || constraintHeading.tagName == "H5" || constraintHeading.tagName == "H6") {
+            const li = document.createElement("li");
+            li.innerHTML = "Constraints should be written in bold.";
+            li.style.color = "red";
+            list.appendChild(li);
+        }
+    }
+    // Checking for LaTex violations
+    const constraints = constraintHeading.nextElementSibling;
+    if (constraints.innerText.includes("<=") || constraints.innerText.includes(">=")) {
+        const li = document.createElement("li");
+        li.innerHTML = "Please use LaTex for mathematical symbols.";
+        li.style.color = "red";
+        list.appendChild(li);
+    }
+    return list;
+}
+
+// Returns list of violations in Permutation Widget
+function permutationViolations() {
+    const list = document.createElement("ul");
+    const description = document.getElementsByClassName("flex items-center bg-gray-A200 px-4 py-2");
+    if (description[0].innerText.length == 0) {
+        const li = document.createElement("li");
+        li.innerHTML = "Permutation widget text missing.";
+        li.style.color = "red";
+        list.appendChild(li);
+    }
+    return list;
+}
+
+// Returns list of violations in Code Widget
+function codeViolations() {
+    const list = document.createElement("ul");
+    const caption = document.getElementsByClassName("styles__CaptionStyled-pzuq02-0 fDAxae");
+    let title = document.getElementsByClassName("text-left mb-2")[0].innerHTML;
+    title = title.substring(11);
+    if (caption[0] == undefined) {
+        const li = document.createElement("li");
+        li.innerHTML = "Code widget caption missing.";
+        li.style.color = "red";
+        list.appendChild(li);
+    } else if (caption[0].innerText != title) {
+        const li = document.createElement("li");
+        li.innerHTML = "Code widget caption not as per template."
+        li.style.color = "red";
+        list.appendChild(li);
     }
     return list;
 }
