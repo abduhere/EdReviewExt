@@ -55,20 +55,17 @@ function checkChallengeA() {
 		document.getElementById("dvReview").appendChild(rpt);
 	}
 
-	if(getSelectedCategory()!="A"){
+	if(getSelectedCategory()!="D"){
 		console.log("Rules only set up for Model Lesson A.");
 		return;
 	}
 
 	rpt.appendChild(document.createElement("p"));
     const titleIssues = lessonTitleViolations();
-    console.log("Found " + titleIssues.childElementCount + " issues in the title.");
     rpt.appendChild(titleIssues);
     const summaryIssues = lessonSummaryViolation();
-    console.log("Found " + summaryIssues.childElementCount + " issues in the summary.");
     rpt.appendChild(summaryIssues);
     const tocIssues = lessonSubTitleViolations();
-    console.log("Found " + tocIssues.childElementCount + " issues in the ToC.");
     rpt.appendChild(tocIssues)
     const textIssues = compolsoryTextViolations();
     rpt.appendChild(textIssues);
@@ -80,9 +77,10 @@ function checkChallengeA() {
     rpt.appendChild(permutationIssues);
     const codeIssues = codeViolations();
     rpt.appendChild(codeIssues);
-    if (titleIssues.childElementCount + summaryIssues.childElementCount + tocIssues.childElementCount == 0){
-    	allGood = document.createElement("span");
+    if (titleIssues.childElementCount + summaryIssues.childElementCount + tocIssues.childElementCount + textIssues.childElementCount + quizTitleIssues.childElementCount + constraintsIssues.childElementCount + permutationIssues.childElementCount + codeIssues.childElementCount == 0){
+    	const allGood = document.createElement("span");
     	allGood.textContent = "All good!"
+        allGood.style.color = "green";
     	rpt.appendChild(allGood)
     }
 }
@@ -168,25 +166,50 @@ function lessonSubTitleViolations() {
 	}
     let subTitles = document.getElementsByClassName("markdownViewer  Widget_markdown-default__1HZqM Widget_markdown-table__2o-wV Widget_markdown-viewer__2usZh Widget_markdown-viewer-rendered-in-toc__2EVsp")[0].innerText;
     subTitles = subTitles.split('\n');
-    const givenSubtitles = ["Statement", "Examples", "Test your understanding of the problem", "Figure it out!", "Try it yourself"];
-    if (subTitles.length != givenSubtitles.length) {
-        const li = document.createElement("li");
-        li.innerHTML = "Number of sections not as per model lesson.";
-        li.style.color = "red";
-        list.appendChild(li);
-    } else {
-        for (var i=0; i<subTitles.length; i++) {
-            if (subTitles[i] != givenSubtitles[i]) {
+    const givenSubtitles = ["statement", "examples", "test your understanding of the problem", "figure it out!", "try it yourself"];
+    let check = 0;
+    for (var i=0; i<subTitles.length; i++) {
+        const words = subTitles[i].split(" ");
+        if (words[0][0] != words[0][0].toUpperCase() && check==0) {
+            const li = document.createElement("li");
+            li.innerHTML = "Convert TOC headings to Sentence case.";
+            li.style.color = "red";
+            list.appendChild(li);
+            check += 1;
+        }
+        for (var j=1; j<words.length; j++) {
+            if (words[j][0] == words[j][0].toUpperCase() && check==0) {
                 const li = document.createElement("li");
+                li.innerHTML = "Convert TOC headings to Sentence case.";
                 li.style.color = "red";
-                if (subTitles[i] == givenSubtitles[i].toLowerCase()) {
-                    li.innerHTML = "Convert subtitles to sentence case.";
-                } else {
-                    li.innerHTML = "List missing titles.";
-                }
                 list.appendChild(li);
-                break;
+                check += 1;
             }
+        }
+    }
+    for (var i=0; i<subTitles.length; i++) {
+        subTitles[i] = subTitles[i].toLowerCase();
+    }
+    for (var i=0; i<subTitles.length; i++) {
+        if (!subTitles.includes(givenSubtitles[i])) {
+            const li = document.createElement("li");
+            li.style.color = "red";
+            li.innerHTML = "\"" + givenSubtitles[i] + "\" heading missing from TOC.";
+            list.appendChild(li);
+        }
+    }
+
+    // Checking heading level violations
+    const ids = ["Statement", "Examples", "Test-your-understanding-of-the-problem", "Figure-it-out!", "Try-it-yourself"];
+    for (var i=0; i<ids.length; i++) {
+        const element = document.getElementById(ids[i]);
+        const tag = element.tagName;
+        if (tag != "H2") {
+            const li = document.createElement("li");
+            li.innerHTML = "\"" + element.innerText + "\" heading level not correct.";
+            li.style.color = "red";
+            list.appendChild(li);
+            element.style.color = "red";
         }
     }
     return list;
@@ -278,8 +301,6 @@ function compolsoryTextViolations() {
             }
         }
     }
-
-    // Checking Try it yourself text violations in case of more than one files in coding playground
     return list;
 }
 
