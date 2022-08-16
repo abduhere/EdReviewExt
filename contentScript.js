@@ -1,9 +1,11 @@
+// Clears the list of previous rules if reviewer is run again
 const removeAllChildren = (parent) => {
     while (parent.lastChild) {
         parent.removeChild(parent.lastChild);
     }
 }
 
+// Returns HTML for UI for selecting categories
 function setUpCategoryChoices(){
 	var strRadioGrp = `Select Lesson Category: &nbsp; &nbsp; &nbsp;<input type="radio" name="category" value="A" checked="checked"> A
 					<input type="radio" name="category" value="B"> B
@@ -32,51 +34,60 @@ function addReview() {
     buttonB.id = "btnSolA";
     buttonB.addEventListener("click", checkSolutionA);
     buttonB.style.backgroundColor = "rgb(85,83,255)";
-
+    
 	div.innerHTML = setUpCategoryChoices();
     div.append(document.createElement("p"));
     div.appendChild(buttonA);
     div.append(document.createElement("p")); 
     div.appendChild(buttonB)
-
+    
     document.body.appendChild(div);
     document.getElementById("dvReview").style.zIndex = "1000"
+}
+
+// Returns the selected category of lessons
+function getSelectedCategory() {
+    categoryRadioButtons = document.getElementsByName("category");
+    for(i = 0; i < categoryRadioButtons.length; i++){
+        if(categoryRadioButtons[i].checked){
+            return categoryRadioButtons[i].value;
+        }
+    }
 }
 
 // This function calls rule functions according to the lesson category
 function checkChallengeA() {
     var rpt = document.getElementById("dvRevDtl");
-    if(rpt!=null){
+    if (rpt != null) {
 		removeAllChildren(rpt); // clean up the reporting div
 	}
-	else{
+	else {
 		rpt = document.createElement("div");
 		rpt.id = "dvRevDtl";
 		document.getElementById("dvReview").appendChild(rpt);
 	}
 
-	if(getSelectedCategory()!="D"){
-		console.log("Rules only set up for Model Lesson A.");
-		return;
-	}
+    const category = getSelectedCategory();
 
 	rpt.appendChild(document.createElement("p"));
-    const titleIssues = lessonTitleViolations();
+    const titleIssues = lessonTitleViolations(category);
     rpt.appendChild(titleIssues);
-    const summaryIssues = lessonSummaryViolation();
+    const summaryIssues = lessonSummaryViolation(category);
     rpt.appendChild(summaryIssues);
-    const tocIssues = lessonSubTitleViolations();
+    const tocIssues = lessonSubTitleViolations(category);
     rpt.appendChild(tocIssues)
-    const textIssues = compolsoryTextViolations();
+    const textIssues = compolsoryTextViolations(category);
     rpt.appendChild(textIssues);
-    const quizTitleIssues = quizTitleViolations();
+    const quizTitleIssues = quizTitleViolations(category);
     rpt.appendChild(quizTitleIssues);
-    const constraintsIssues = constraintsViolations();
+    const constraintsIssues = constraintsViolations(category);
     rpt.appendChild(constraintsIssues);
-    const permutationIssues = permutationViolations();
+    const permutationIssues = permutationViolations(category);
     rpt.appendChild(permutationIssues);
     const codeIssues = codeViolations();
     rpt.appendChild(codeIssues);
+    const examplesIssues = examplesViolations(category);
+    rpt.appendChild(examplesIssues);
     if (titleIssues.childElementCount + summaryIssues.childElementCount + tocIssues.childElementCount + textIssues.childElementCount + quizTitleIssues.childElementCount + constraintsIssues.childElementCount + permutationIssues.childElementCount + codeIssues.childElementCount == 0){
     	const allGood = document.createElement("span");
     	allGood.textContent = "All good!"
@@ -90,19 +101,20 @@ function checkSolutionA() {
 //     getSelectedCategory();
 }
 
-function getSelectedCategory() {
-    categoryRadioButtons = document.getElementsByName("category");
-    for(i = 0; i < categoryRadioButtons.length; i++){
-    	if(categoryRadioButtons[i].checked){
-    		return categoryRadioButtons[i].value;
-    	}
-    }
-}
 
 // Returns a list of violations in Lesson Title
-function lessonTitleViolations() {
+function lessonTitleViolations(category) {
+    let list = document.createElement("ul");
+    if (category == "A" || category == "B" || category == "C" || category == "D") {
+        list = titleTemplateViolation(list);
+        list = titleTitleCaseViolation(list);
+    }
+    return list;
+}
+
+// Checks if title is as per template
+function titleTemplateViolation(list) {
     let title = document.getElementsByClassName("text-left mb-2")[0].innerHTML;
-    const list = document.createElement("ul");
     title = title.split(' ');
     if (title[0] != "Challenge:") {
         const li = document.createElement("li");
@@ -110,6 +122,13 @@ function lessonTitleViolations() {
         li.style.color = "red";
         list.appendChild(li);
     }
+    return list;
+}
+
+// Checks if title is in Title Case
+function titleTitleCaseViolation(list) {
+    let title = document.getElementsByClassName("text-left mb-2")[0].innerHTML;
+    title = title.split(' ');
     for (var i=0; i<title.length; i++) {
         if (title[i].charAt(0) == title[i].charAt(0).toLowerCase()) {
             const li = document.createElement("li");
@@ -123,28 +142,68 @@ function lessonTitleViolations() {
 }
 
 // Returns a list df violations in Lesson Summary
-function lessonSummaryViolation() {
+function lessonSummaryViolation(category) {
+    let list = document.createElement("ul");
+    if (category == "A" || category == "B" || category == "C" || category == "D") {
+        list = summaryMissingViolation(list);
+        if (list.childElementCount == 0) {
+            list = summaryPeriodViolation(list);
+        }
+        if (list.childElementCount == 0) {
+            list = summaryProblemTitleViolation(list);
+        }
+        if (list.childElementCount == 0) {
+            list = summaryTemplateViolation(list);
+        }
+    }
+    return list;
+}
+
+// Checks if lesson summary is missing
+function summaryMissingViolation(list) {
     const summaryElement = document.getElementsByClassName("PageSummary__Description-der42c-2 fOqKyO");
-    const list = document.createElement("ul");
-    let title = document.getElementsByClassName("text-left mb-2")[0].innerHTML;
-    title = title.substring(11);
-    const summary = "Try to solve the " + title + " problem.";
     if (summaryElement[0].innerText.length == 0) {
         const li = document.createElement("li");
         li.innerHTML = "Lesson summary is missing!";
         li.style.color = "red";
         list.appendChild(li);
-    } else if (summaryElement[0].innerText.toLowerCase() != summary.toLowerCase()) {
+    }
+    return list;
+}
+
+// Check if lesson summary as per template
+function summaryTemplateViolation(list) {
+    const summaryElement = document.getElementsByClassName("PageSummary__Description-der42c-2 fOqKyO");
+    let title = document.getElementsByClassName("text-left mb-2")[0].innerHTML;
+    title = title.substring(11);
+    const summary = "Try to solve the " + title + " problem.";
+    if (summaryElement[0].innerText.toLowerCase() != summary.toLowerCase()) {
         const li = document.createElement("li");
         li.innerHTML = "Lesson summary not as per category D summary template.";
         li.style.color = "red";
         list.appendChild(li);
-    } else if (summaryElement[0].innerText.substring(17, 17 + title.length) != title) {
+    }
+    return list;
+}
+
+// Checks if Problem Title is in Title Case in summary
+function summaryProblemTitleViolation(list) {
+    const summaryElement = document.getElementsByClassName("PageSummary__Description-der42c-2 fOqKyO");
+    let title = document.getElementsByClassName("text-left mb-2")[0].innerHTML;
+    title = title.substring(11);
+    if (summaryElement[0].innerText.substring(17, 17 + title.length) != title) {
         const li = document.createElement("li");
         li.innerHTML = "Problem Title should be in Title Case in lesson summary.";
         li.style.color = "red";
         list.appendChild(li);
-    }else if (summaryElement[0].innerText[summaryElement[0].innerText.length - 1] != '.') {
+    }
+    return list;
+}
+
+// Checks if lesson summary ends in period
+function summaryPeriodViolation(list) {
+    const summaryElement = document.getElementsByClassName("PageSummary__Description-der42c-2 fOqKyO");
+    if (summaryElement[0].innerText[summaryElement[0].innerText.length - 1] != '.') {
         const li = document.createElement("li");
         li.innerHTML = "The summary should end with the period symbol.";
         li.style.color = "red";
@@ -154,19 +213,39 @@ function lessonSummaryViolation() {
 }
 
 // Returns a list of violations in TOC
-function lessonSubTitleViolations() {
-    const list = document.createElement("ul");
-	let toc = document.getElementsByClassName("markdownViewer  Widget_markdown-default__1HZqM Widget_markdown-table__2o-wV Widget_markdown-viewer__2usZh Widget_markdown-viewer-rendered-in-toc__2EVsp")
+function lessonSubTitleViolations(category) {
+    let list = document.createElement("ul");
+    if (category == "A" || category == "B" || category == "C" || category == "D") {
+        list  = tocUnavailableViolation(list);
+        if (list.childElementCount == 0) {
+            list  = tocSentenceCaseViolation(list);
+        }
+        if (list.childElementCount == 0) {
+            list = tocMissingHeadingViolation(list);
+        }
+        if (list.childElementCount == 0) {
+            list = tocHeadingLevelViolation(list);
+        }
+    }
+    return list;
+}
+
+// Checks if TOC is present or not
+function tocUnavailableViolation(list) {
+    let toc = document.getElementsByClassName("markdownViewer  Widget_markdown-default__1HZqM Widget_markdown-table__2o-wV Widget_markdown-viewer__2usZh Widget_markdown-viewer-rendered-in-toc__2EVsp")
 	if (toc.length==0){
         const li = document.createElement("li");
         li.innerHTML = "No sections defined!";
         li.style.color = "red";
         list.appendChild(li);
-        return list;
 	}
+    return list;
+}
+
+// Checks if TOC headings are in Sentence case
+function tocSentenceCaseViolation(list) {
     let subTitles = document.getElementsByClassName("markdownViewer  Widget_markdown-default__1HZqM Widget_markdown-table__2o-wV Widget_markdown-viewer__2usZh Widget_markdown-viewer-rendered-in-toc__2EVsp")[0].innerText;
     subTitles = subTitles.split('\n');
-    const givenSubtitles = ["statement", "examples", "test your understanding of the problem", "figure it out!", "try it yourself"];
     let check = 0;
     for (var i=0; i<subTitles.length; i++) {
         const words = subTitles[i].split(" ");
@@ -187,6 +266,14 @@ function lessonSubTitleViolations() {
             }
         }
     }
+    return list;
+}
+
+// Checks if any TOC heading is missing
+function tocMissingHeadingViolation(list) {
+    let subTitles = document.getElementsByClassName("markdownViewer  Widget_markdown-default__1HZqM Widget_markdown-table__2o-wV Widget_markdown-viewer__2usZh Widget_markdown-viewer-rendered-in-toc__2EVsp")[0].innerText;
+    subTitles = subTitles.split('\n');
+    const givenSubtitles = ["statement", "examples", "test your understanding of the problem", "figure it out!", "try it yourself"];
     for (var i=0; i<subTitles.length; i++) {
         subTitles[i] = subTitles[i].toLowerCase();
     }
@@ -198,8 +285,11 @@ function lessonSubTitleViolations() {
             list.appendChild(li);
         }
     }
+    return list;
+}
 
-    // Checking heading level violations
+// Check if TOC headings are at correct heading level
+function tocHeadingLevelViolation(list) {
     const ids = ["Statement", "Examples", "Test-your-understanding-of-the-problem", "Figure-it-out!", "Try-it-yourself"];
     for (var i=0; i<ids.length; i++) {
         const element = document.getElementById(ids[i]);
@@ -216,10 +306,18 @@ function lessonSubTitleViolations() {
 }
 
 // Returns a list of violations in compulsory texts
-function compolsoryTextViolations() {
-    const list = document.createElement("ul");
+function compolsoryTextViolations(category) {
+    let list = document.createElement("ul");
+    if (category == "A" || category == "B" || category == "C" || category == "D") {
+        list = testTextViolation(list);
+        list = figureTextViolation(list);
+        list = tryTextViolation(list);
+    }
+    return list;
+}
 
-    // Checking Test your understanding of the problem text violationa
+// Check if Test your understanding of the problem text is as per template
+function testTextViolation(list) {
     const headingTest = document.getElementById("Test-your-understanding-of-the-problem");
     if (headingTest.nextElementSibling == null) {
         if (headingTest.closest(".mt-5").nextElementSibling.innerText != "Let’s take a moment to make sure we have correctly understood the problem. The quiz below helps us to check that we are solving precisely the right problem:") {
@@ -229,15 +327,18 @@ function compolsoryTextViolations() {
             list.appendChild(li);
         }
     } else {
-        if (headingTest.nextElementSibling.innerText != "Let's take a moment to make sure we have correctly understood the problem. The quiz below helps us to check that we are solving precisely the right problem:") {
+        if (headingTest.nextElementSibling.innerText != "Let’s take a moment to make sure we have correctly understood the problem. The quiz below helps us to check that we are solving precisely the right problem:") {
             const li = document.createElement("li");
             li.innerHTML = "\"Test your understanding of the problem\" Section text missing/not as per template."
             li.style.color = "red";
             list.appendChild(li);
         }
     }
+    return list;
+}
 
-    // Checking Figure it out! text violations
+// Check if Figure it out! text is as per template
+function figureTextViolation(list) {
     const headingFigure = document.getElementById("Figure-it-out!");
     if (headingFigure.nextElementSibling == null) {
         if (headingFigure.closest(".mt-5").nextElementSibling.innerText != "We have a game for you to play: re-arrange the logical building blocks to develop a clearer understanding of how to solve this problem.") {
@@ -254,8 +355,11 @@ function compolsoryTextViolations() {
             list.appendChild(li);
         }
     }
+    return list;
+}
 
-    // Checking Try it yourself text violations
+// Check if Try it yourself text is as per template
+function tryTextViolation(list) {
     const sentences = ["We have provided a useful code template in the other file, that you may build on to solve this problem.", "We have provided some useful code templates in the other files, that you may build on to solve this problem.", "We have provided some useful code templates in the other file, that you may build on to solve this problem."]
     const headingTry = document.getElementById("Try-it-yourself");
     const files = document.getElementsByClassName("styles__Files-sc-2pjuhh-9 ksBJCN");
@@ -305,15 +409,31 @@ function compolsoryTextViolations() {
 }
 
 // Returns a list of violations in Quiz Title
-function quizTitleViolations() {
-    const list = document.createElement("ul");
+function quizTitleViolations(category) {
+    let list = document.createElement("ul");
+    if (category == "A" || category == "B" || category == "C" || category == "D") {
+        list = quizTitleMisisngViolation(list);
+        list = quizTitleTemplateViolation(list);
+    }
+    return list;
+}
+
+// Check if quiz title is missing
+function quizTitleMisisngViolation(list) {
     const quizTitleElement = document.getElementsByClassName("quiz-title");
     if (quizTitleElement.length == 0) {
         const li = document.createElement("li");
         li.innerHTML = "Quiz title is missing.";
         li.style.color = "red";
         list.appendChild(li);
-    } else {
+    }
+    return list;
+}
+
+// Check if quiz title is as per template and in Title Case
+function quizTitleTemplateViolation(list) {
+    const quizTitleElement = document.getElementsByClassName("quiz-title");
+    if (quizTitleElement.length != 0) {
         const quizTitle = quizTitleElement[0].innerText;
         let title = document.getElementsByClassName("text-left mb-2")[0].innerHTML;
         title = title.substring(11);
@@ -332,8 +452,18 @@ function quizTitleViolations() {
 }
 
 // Returns a list of violations in Constraints
-function constraintsViolations() {
-    const list = document.createElement("ul");
+function constraintsViolations(category) {
+    let list = document.createElement("ul");
+    if (category == "A" || category == "B" || category == "C" || category == "D") {
+        list = constraintsMissingViolation(list);
+        list = constraintsBoldViolation(list);
+        list = constraintsLatexViolation(list);
+    }
+    return list;
+}
+
+// Check if contraints are missing
+function constraintsMissingViolation(list) {
     const statementHeading = document.getElementById("Statement");
     const constraintHeading = statementHeading.nextElementSibling.nextElementSibling;
     if (constraintHeading.innerText != "Constraints" && constraintHeading.innerText != "Constraints#") {
@@ -341,7 +471,15 @@ function constraintsViolations() {
         li.innerHTML = "Constraints are missing.";
         li.style.color = "red";
         list.appendChild(li);
-    } else {
+    }
+    return list;
+}
+
+// Check if constraints heading is other than bold
+function constraintsBoldViolation(list) {
+    const statementHeading = document.getElementById("Statement");
+    const constraintHeading = statementHeading.nextElementSibling.nextElementSibling;
+    if (constraintHeading.innerText == "Constraints" || constraintHeading.innerText == "Constraints#") {
         if (constraintHeading.firstElementChild == null || constraintHeading.tagName == "H2" || constraintHeading.tagName == "H3" || constraintHeading.tagName == "H4" || constraintHeading.tagName == "H5" || constraintHeading.tagName == "H6") {
             const li = document.createElement("li");
             li.innerHTML = "Constraints should be written in bold.";
@@ -349,7 +487,13 @@ function constraintsViolations() {
             list.appendChild(li);
         }
     }
-    // Checking for LaTex violations
+    return list;
+}
+
+// Check if there are any LaTex violations in constraints
+function constraintsLatexViolation(list) {
+    const statementHeading = document.getElementById("Statement");
+    const constraintHeading = statementHeading.nextElementSibling.nextElementSibling;
     const constraints = constraintHeading.nextElementSibling;
     if (constraints.innerText.includes("<=") || constraints.innerText.includes(">=")) {
         const li = document.createElement("li");
@@ -361,12 +505,74 @@ function constraintsViolations() {
 }
 
 // Returns list of violations in Permutation Widget
-function permutationViolations() {
-    const list = document.createElement("ul");
+function permutationViolations(category) {
+    let list = document.createElement("ul");
+    if (category == "A" || category == "B" || category == "C" || category == "D") {
+        list = permutationMissingViolation(list);
+        list = permutationTextTemplateViolation(list);
+    }
+    return list;
+}
+
+// Check if permutation widget text is missing
+function permutationMissingViolation(list) {
     const description = document.getElementsByClassName("flex items-center bg-gray-A200 px-4 py-2");
     if (description[0].innerText.length == 0) {
         const li = document.createElement("li");
         li.innerHTML = "Permutation widget text missing.";
+        li.style.color = "red";
+        list.appendChild(li);
+    }
+    return list;
+}
+
+// Check if permutation widget text as per template
+function permutationTextTemplateViolation(list) {
+    const description = document.getElementsByClassName("flex items-center bg-gray-A200 px-4 py-2");
+    if (description[0].innerText.length != 0) {
+        if (description[0].innerText != "Drag and drop the cards to re-arrange them in the correct sequence.") {
+            const li = document.createElement("li");
+            li.innerHTML = "Permutation widget text not as per template.";
+            li.style.color = "red";
+            list.appendChild(li);
+        }
+    }
+    return list;
+}
+
+// Returns list of violations in Examples heading
+function examplesViolations(category) {
+    let list = document.createElement("ul");
+    if (category == "B" || category == "C") {
+        list = examplesSlideMissingViolation(list);
+        if (list.childElementCount == 0) {
+            list = examplesSlideSingleViolation(list);
+        }
+    }
+    return list;
+}
+
+// Checks if Examples slide deck is missing
+function examplesSlideMissingViolation(list) {
+    const examplesHeading = document.getElementById("Examples");
+    const slideDeck = examplesHeading.closest(".mt-5").nextElementSibling;
+    if (slideDeck.getElementsByClassName("text-center block").length == 0) {
+        const li = document.createElement("li");
+        li.innerHTML = "There is no slide deck in examples.";
+        li.style.color = "red";
+        list.appendChild(li);
+    }
+    return list;
+}
+
+// Checks if Examples slide deck has only one slide
+function examplesSlideSingleViolation(list) {
+    const examplesHeading = document.getElementById("Examples");
+    const slideDeck = examplesHeading.closest(".mt-5").nextElementSibling;
+    console.log(slideDeck.getElementsByClassName("text-center hidden"));
+    if (slideDeck.getElementsByClassName("text-center hidden").length == 0) {
+        const li = document.createElement("li");
+        li.innerHTML = "There is only one slide in the slide deck, kindly add at least one more example.";
         li.style.color = "red";
         list.appendChild(li);
     }
